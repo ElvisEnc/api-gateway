@@ -1,0 +1,16 @@
+name: api-gateway
+
+services:
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: api-gateway:local
+    container_name: api-gateway
+    ports:
+      - "8090:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # Clave de firma del JWT. Se sobrescribe con la variable JWT_KEY o en un archivo .env.
+      Jwt__Key: ${JWT_KEY:-actividad1-clave-demo-cambiar-en-produccion-0123456789}
+    restart: unless-stopped
