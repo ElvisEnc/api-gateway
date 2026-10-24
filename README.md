@@ -266,6 +266,12 @@ curl -sS -i -w "$W" -X POST $B/api/login -H "Content-Type: application/json" -d 
 > Si corres todo el bloque seguido, el 429 aparece antes del intento 11. Espera un minuto o reutiliza
 > `$TOKEN`, que dura 60 minutos.
 
+### Con un archivo `.http`
+
+[`demo/actividad1.http`](demo/actividad1.http) tiene los 5 casos básicos (login, users y posts con token,
+401 sin token y 401 con credenciales inválidas). Ábrelo en VS Code con la extensión **REST Client**, en Rider
+o en Visual Studio y ejecuta primero la petición `login`: las demás toman el token de su respuesta.
+
 ### Probar el token expirado (opcional)
 
 Levanta el gateway con tokens de 1 minuto, pide uno y espera ~1,5 minutos (hay 30 s de tolerancia de reloj):
@@ -363,8 +369,18 @@ de 10 intentos por minuto. Para una demo es suficiente; en producción, detrás 
 dotnet test
 ```
 
-> Los tests de integración (xUnit + `WebApplicationFactory<Program>` + WireMock.Net) se agregan en la
-> Fase 6. Por ahora el proyecto `tests/ApiGateway.Tests` solo tiene la plantilla.
+Tests de integración con xUnit + `WebApplicationFactory<Program>`. jsonplaceholder se reemplaza por un
+upstream falso de **WireMock.Net**, así que **no hace falta Docker ni internet**.
+
+| Archivo | Qué cubre |
+|---|---|
+| `LoginTests.cs` | 200 + token, 401 `CREDENCIALES_INVALIDAS` (contraseña mala o usuario inexistente), 400 `SOLICITUD_INVALIDA`, username sin distinguir mayúsculas, 429 con `Retry-After` |
+| `ProxyJsonPlaceholderTests.cs` | 401 sin token, con firma ajena, con `iss`/`aud` distintos y `TOKEN_EXPIRADO`; reenvío a `/users` y `/posts` sin el prefijo `/api` y sin `Authorization`; `POST` no enrutado; `/health` anónimo; toda ruta del proxy declara `AuthorizationPolicy` |
+| `IdentidadTransformTests.cs` | Un `X-User-Id` falso enviado por el cliente no llega al upstream |
+
+```bash
+dotnet test --logger "console;verbosity=normal"   # lista cada test
+```
 
 ---
 
@@ -401,7 +417,8 @@ api-gateway/
 │   ├── Proxy/           # transform de identidad (X-User-*)
 │   ├── Program.cs       # DI, JwtBearer, policies, rate limiter, YARP
 │   └── appsettings*.json
-├── tests/ApiGateway.Tests/
+├── tests/ApiGateway.Tests/   # xUnit + WebApplicationFactory + WireMock.Net
+├── demo/actividad1.http
 ├── Dockerfile
 ├── docker-compose.yml
 └── ApiGateway.slnx

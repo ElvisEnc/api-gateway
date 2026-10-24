@@ -1,0 +1,25 @@
+@gw = http://localhost:8090
+
+### 1. Login (sin token)
+# @name login
+POST {{gw}}/api/login
+Content-Type: application/json
+
+{ "username": "admin", "password": "admin123" }
+
+### 2. Usuarios con token
+GET {{gw}}/api/users
+Authorization: Bearer {{login.response.body.$.access_token}}
+
+### 3. Posts con token
+GET {{gw}}/api/posts
+Authorization: Bearer {{login.response.body.$.access_token}}
+
+### 4. Sin token → 401
+GET {{gw}}/api/users
+
+### 5. Credenciales inválidas → 401
+POST {{gw}}/api/login
+Content-Type: application/json
+
+{ "username": "admin", "password": "incorrecta" }
